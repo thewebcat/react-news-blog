@@ -115,12 +115,16 @@ class Comments extends Component {
     }
 }
 
-class TestInput extends Component {
+class Add extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            myValue: ''
+            isBtnDisabled: true
         };
+    }
+
+    componentDidMount() {
+        ReactDOM.findDOMNode(this.refs.author).focus()
     }
 
     onChangeHandler = (e) => {
@@ -130,26 +134,51 @@ class TestInput extends Component {
     };
 
     onBtnClickHandler = (e) => {
-        //alert(this.state.myValue)
-        alert(ReactDOM.findDOMNode(this.refs.myTestInput).value)
+        e.preventDefault();
+        let author = ReactDOM.findDOMNode(this.refs.author).value;
+        let text = ReactDOM.findDOMNode(this.refs.text).value;
+        alert(`
+        ${author}
+        ${text}
+        `);
+    };
+
+    onCheckRuleClick = (e) => {
+        this.setState({
+            isBtnDisabled: !this.state.isBtnDisabled
+        });
     };
 
     render() {
         return (
-            <div className="form-inline mb-sm-3">
-                <div className="form-group mx-sm-3">
-                    <label htmlFor="test-input">Значение</label>
-                    <input className="form-control test-input ml-sm-3"
-                           type="text"
-                           id="test-input"
-                           placeholder='введите значение'
-                           defaultValue=""
-                           ref="myTestInput"/>
+            <form className='add cf p-2 mb-2'>
+                <input
+                    type='text'
+                    className='form-control mb-1 add__author'
+                    defaultValue=''
+                    placeholder='Ваше имя'
+                    ref='author'
+                />
+                <textarea
+                    className='form-control mb-1 add__text'
+                    defaultValue=''
+                    placeholder='Текст новости'
+                    ref='text'>
+                </textarea>
+                <div className="form-check">
+                    <label className='form-check-label'>
+                        <input type='checkbox' className="form-check-input" defaultChecked={false} onChange={this.onCheckRuleClick} ref='checkrule'/>
+                        <small>Я согласен с правилами</small>
+                    </label>
                 </div>
-                <div className="form-group">
-                    <button type="submit" className="btn btn-primary" onClick={this.onBtnClickHandler}>Submit</button>
-                </div>
-            </div>
+                <button
+                    className='btn btn-info col-sm-12 add__btn'
+                    onClick={this.onBtnClickHandler}
+                    ref='alert_button'
+                    disabled={this.state.isBtnDisabled}>
+                    Показать alert
+                </button>
+            </form>
         )
     }
 }
@@ -158,8 +187,8 @@ class App extends Component {
     render() {
         return (
             <div className="app">
+                <Add/>
                 <h3>Новости</h3>
-                <TestInput/>
                 <News data={my_news}/>
                 <Comments/>
             </div>
