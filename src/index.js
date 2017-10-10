@@ -1,12 +1,15 @@
 import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
 import PropTypes from 'prop-types';
+import EventEmitter from 'wolfy87-eventemitter';
 import './index.css';
 // import App from './App';
 // import registerServiceWorker from './registerServiceWorker';
 //
 // ReactDOM.render(<App />, document.getElementById('root'));
 // registerServiceWorker();
+
+window.ee = new EventEmitter();
 
 let my_news = [
   {
@@ -119,7 +122,9 @@ class Add extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            isBtnDisabled: true
+            isAuthorValid: false,
+            isTextValid: false,
+            isRuleChecked: false
         };
     }
 
@@ -127,25 +132,39 @@ class Add extends Component {
         ReactDOM.findDOMNode(this.refs.author).focus()
     }
 
-    onChangeHandler = (e) => {
-        this.setState({
-            myValue: e.target.value
-        })
+    onChangeHandler = (filedName, e) => {
+        if (e.target.value.trim().length > 0) {
+            this.setState({
+                [''+filedName]: true
+            })
+        } else {
+            this.setState({
+                [''+filedName]: false
+            })
+        }
     };
 
     onBtnClickHandler = (e) => {
         e.preventDefault();
         let author = ReactDOM.findDOMNode(this.refs.author).value;
-        let text = ReactDOM.findDOMNode(this.refs.text).value;
-        alert(`
-        ${author}
-        ${text}
-        `);
+        let textEl = ReactDOM.findDOMNode(this.refs.text);
+        let text = textEl.value;
+
+        let item = [{
+            author: author,
+            text: text,
+            bigText: '...'
+        }];
+
+        window.ee.emit('News.add', item);
+
+        textEl.value = '';
+        this.setState({isTextValid: false});
     };
 
     onCheckRuleClick = (e) => {
         this.setState({
-            isBtnDisabled: !this.state.isBtnDisabled
+            isRuleChecked: !this.state.isRuleChecked
         });
     };
 
@@ -158,12 +177,14 @@ class Add extends Component {
                     defaultValue=''
                     placeholder='Ваше имя'
                     ref='author'
+                    onChange={this.onChangeHandler.bind(this, 'isAuthorValid')}
                 />
                 <textarea
                     className='form-control mb-1 add__text'
                     defaultValue=''
                     placeholder='Текст новости'
-                    ref='text'>
+                    ref='text'
+                    onChange={this.onChangeHandler.bind(this, 'isTextValid')}>
                 </textarea>
                 <div className="form-check">
                     <label className='form-check-label'>
@@ -175,8 +196,8 @@ class Add extends Component {
                     className='btn btn-info col-sm-12 add__btn'
                     onClick={this.onBtnClickHandler}
                     ref='alert_button'
-                    disabled={this.state.isBtnDisabled}>
-                    Показать alert
+                    disabled={!this.state.isRuleChecked || !this.state.isAuthorValid || !this.state.isTextValid}>
+                    Добавить новость
                 </button>
             </form>
         )
@@ -184,12 +205,34 @@ class Add extends Component {
 }
 
 class App extends Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            news: my_news
+        };
+    }
+
+    componentDidMount() {
+        /* Слушай событие "Создана новость"
+          если событие произошло, обнови this.state.news
+        */
+        window.ee.addListener('News.add', item => {
+            let nextNews = item.concat(this.state.news);
+            this.setState({news: nextNews});
+        });
+    }
+
+    componentWillUnmount() {
+        /* Больше не слушай событие "Создана новость" */
+        window.ee.removeListener('News.add');
+    }
+
     render() {
         return (
             <div className="app">
                 <Add/>
                 <h3>Новости</h3>
-                <News data={my_news}/>
+                <News data={this.state.news}/>
                 <Comments/>
             </div>
         );
